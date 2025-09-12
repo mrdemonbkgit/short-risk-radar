@@ -13,7 +13,9 @@ export default function MetricHelp() {
             <li><b>ΔOI</b>: OI_now − OI_{'{'}t−window{'}'} (1h/4h/24h windows)</li>
             <li><b>Orderbook Imbalance</b>: Σ bid_qty(≤+2%) / Σ ask_qty(≤+2%) around mid</li>
             <li><b>OI/PerpVol</b>: OI_usdt / fut_vol24_usdt (stickiness proxy)</li>
-            <li><b>SRS</b>: Squeeze Risk Score (0–100). Higher = greater squeeze risk.</li>
+            <li><b>SRS</b>: Squeeze Risk Score (0–100). Higher = greater squeeze risk.<br/>
+              <span className="text-slate-400">Bands: ≤39 GREEN (low), 40–69 YELLOW (medium), ≥70 RED (high). Traffic light is the action gate; SRS is the risk context.</span>
+            </li>
           </ul>
           <p className="text-slate-400">Tip: hover tiles for recent readings; click a symbol for charts.</p>
         </div>

@@ -136,6 +136,11 @@ function Tile({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
   const ageSec = data?.ts ? Math.max(0, Math.round((Date.now() - data.ts) / 1000)) : null;
   const light = String(data.traffic_light || "YELLOW").toUpperCase();
   const lightColor = light === "RED" ? "bg-red-500" : light === "GREEN" ? "bg-emerald-500" : "bg-amber-500";
+  const srs = Number(data.srs) || 0;
+  const srsBand = srs >= 70 ? "RED" : srs >= 40 ? "YELLOW" : "GREEN";
+  const srsColor = srsBand === "RED" ? "bg-red-500" : srsBand === "YELLOW" ? "bg-amber-500" : "bg-emerald-500";
+  const actionText = light === "RED" ? "DO NOT SHORT" : light === "GREEN" ? "SHORT WINDOW" : "BASIS-ONLY";
+  const actionBorder = light === "RED" ? "border-red-500 text-red-300" : light === "GREEN" ? "border-emerald-500 text-emerald-300" : "border-amber-500 text-amber-300";
 
   return (
     <div className="rounded border border-slate-700 p-4 grid grid-cols-2 gap-2">
@@ -145,7 +150,15 @@ function Tile({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
           <Link className="font-medium text-sky-400" href={`/symbol/${data.symbol}`}>{data.symbol}</Link>
         </div>
         <div className="text-xs flex items-center gap-3">
-          <span>SRS: {data.srs} / {light}</span>
+          <div className="flex items-center gap-2" title="SRS: composite squeeze risk (0 low, 100 high). Bands: ≤39 GREEN, 40–69 YELLOW, ≥70 RED.">
+            <div className="w-20 h-1.5 bg-slate-800 rounded">
+              <div className={`h-1.5 ${srsColor} rounded`} style={{ width: `${Math.min(100, Math.max(0, srs))}%` }} />
+            </div>
+            <span className="font-mono">SRS {srs}</span>
+          </div>
+          <span className={`px-2 py-0.5 rounded-full border ${actionBorder}`} title="Action from rules engine">
+            {actionText}
+          </span>
           {ageSec !== null && <span className="text-slate-400">age {ageSec}s</span>}
           {typeof latencyMs === "number" && <span className="text-slate-400">api {latencyMs}ms</span>}
           <button onClick={onRemove} className="px-2 py-0.5 rounded border border-slate-600 hover:bg-red-500/10 hover:border-red-500">Remove</button>
