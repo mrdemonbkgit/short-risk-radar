@@ -70,3 +70,27 @@ class BinanceClient:
         r = await self._client.get("/fapi/v1/depth", params={"symbol": symbol, "limit": limit})
         r.raise_for_status()
         return r.json()
+
+    async def futures_exchange_info(self) -> Dict[str, Any]:
+        """Return futures exchange info to enumerate available contracts.
+
+        Useful to list USDT-M perpetual trading symbols to avoid 404s for unsupported pairs.
+        """
+        r = await self._client.get("/fapi/v1/exchangeInfo")
+        r.raise_for_status()
+        return r.json()
+
+    async def spot_symbol_exists(self, symbol: str) -> bool:
+        """Check if a spot symbol exists on the main spot exchange.
+
+        We prefer exchangeInfo for existence (cheap and explicit) rather than relying on
+        a 24h ticker that may fail during maintenance or if trading is halted.
+        """
+        try:
+            r = await self._spot_client.get("/api/v3/exchangeInfo", params={"symbol": symbol})
+            r.raise_for_status()
+            data = r.json()
+            symbols = data.get("symbols") or []
+            return len(symbols) > 0
+        except Exception:
+            return False

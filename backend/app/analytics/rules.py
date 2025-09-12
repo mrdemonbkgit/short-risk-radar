@@ -64,6 +64,10 @@ async def evaluate_rules(symbol: str) -> Tuple[str, List[str]]:
     borrow = snap.get("borrow") or {}
     venues = borrow.get("venues") or []
     shortable = bool(borrow.get("shortable", False))
+    # If no spot market exists, disallow shorting per PRD update
+    has_spot = bool(snap.get("has_spot", False))
+    if not has_spot:
+        reasons.append("no spot market available for borrow/hedge")
     if venues and (not shortable):
         reasons.append("spot short not borrowable or APR too high")
 

@@ -39,6 +39,7 @@
 - **Borrowability & Borrow APR** for spot short (per exchange).
 - **Funding Cap/Floor** & countdown to next funding.
 - **SRS – Squeeze Risk Score** (weighted composite; see §9).
+- **has_spot**: whether a matching spot market exists for the perp symbol (e.g., `MYXUSDT` spot). If `false`, hedging/borrowing is not possible.
 
 ---
 
@@ -61,7 +62,7 @@ Each tile must show, updated at least every 10–30s:
 - **Funding 1h (derived)**, **Funding interval (1h/4h/8h)**; **Daily estimate**; **Next funding countdown**.
 - **OI (USDT)** and **ΔOI 1h**.
 - **Perp Dominance**.
-- **Spot Shortable?** (Yes/No + APR + venue). 
+- **Spot Shortable?** (Yes/No + APR + venue). If no spot market exists (has_spot = false), display “No spot market”.
 - **Traffic Light** + **SRS**.
 - Hover tooltip: last 6 readings of funding/basis/OI.
 
@@ -122,6 +123,7 @@ Each tile must show, updated at least every 10–30s:
 
 ### 7.4 REST API (for UI/agents)
 - `GET /symbols` → list watchlist and metadata.
+- `GET /symbols/available?include_spot=true&verify=true` → list of tradable future symbols with `{ symbol, has_spot }` and optionally `unavailable`.
 - `GET /metrics/{symbol}` → latest snapshot:
 ```json
 {
@@ -138,7 +140,8 @@ Each tile must show, updated at least every 10–30s:
   "delta_oi_1h_usdt": -1.2e6,
   "perp_dominance_pct": 86.3,
   "orderbook_imbalance": 0.76,
-  "borrow": {"shortable": true, "venues":[{"ex":"HTX","apr_pct": 38.0}]},
+  "borrow": {"shortable": false, "venues": []},
+  "has_spot": false,
   "srs": 68,
   "traffic_light": "RED",
   "next_funding_in_sec": 2100
@@ -155,7 +158,7 @@ Each tile must show, updated at least every 10–30s:
 1) `funding_1h < 0` AND `basis_twap15 ≤ 0` (**perp discount**).  
 2) `perp_dominance ≥ 70%` **and** `oi/usdt_vol24 ≥ 0.25`.  
 3) `delta_oi_1h > 0` while **price ↑** in last hour.  
-4) **Spot short not borrowable** (all venues) or APR > user threshold.
+4) **No spot market exists** (`has_spot = false`) or spot short not borrowable/APR > threshold.
 
 **BASIS‑ONLY (Yellow):** funding very negative (≤ −0.15%/h) **but** spot short borrowable with acceptable APR.
 
@@ -186,8 +189,8 @@ SRS = 100·(0.25·σ(A) + 0.20·σ(B) + 0.20·σ(C) + 0.20·σ(D) + 0.15·σ(E))
 - **Header:** account/profile (local only), global refresh toggle, theme.
 - **Left panel:** watchlist with SRS badges, quick filters (Red/Yellow/Green). 
 - **Main grid:** summary tiles. Click opens detail drawer.
-- **Detail view:** 4 charts (Price/Index/Basis; Funding; OI; Dominance) + two side cards (Borrowability; Orderbook Imbalance). 
-- **Explainable rules:** chip list “Why RED?” with exact conditions that fired.
+- **Detail view:** 4 charts (Price/Index/Basis; Funding; OI; Dominance) + two side cards (Borrowability; Orderbook Imbalance). Show `has_spot` prominently.
+- **Explainable rules:** chip list “Why RED?” with exact conditions that fired (e.g., “no spot market available for borrow/hedge”).
 - **Performance hints:** show API latency and data freshness per symbol.
 
 ---
@@ -196,7 +199,7 @@ SRS = 100·(0.25·σ(A) + 0.20·σ(B) + 0.20·σ(C) + 0.20·σ(D) + 0.15·σ(E))
 - **Basis%** = `(mark − index) / index × 100`.
 - **TWAP(w)** of basis: average of per‑minute basis over the last `w` minutes.
 - **Funding Daily Est%** = `funding_1h × 24` (display with caveat that it varies by hour).
-- **Perp Dominance%** = `fut_vol24 / (fut_vol24 + spot_vol24_agg) × 100` (spot from top N venues, default N=5; filter out wash‑trading venues via allowlist).
+- **Perp Dominance%** = `fut_vol24 / (fut_vol24 + spot_vol24_agg) × 100` (spot from top N venues, default N=5; if `has_spot=false`, treat `spot_vol24_agg=0`).
 - **ΔOI** = `OI_now − OI_{t−window}` (windows: 1h, 4h, 24h using openInterestHist).
 - **Orderbook Imbalance** = `Σ bid_qty(≤+2%) / Σ ask_qty(≤+2%)` (perp default).
 - **OI/PerpVol** = `OI_usdt / fut_vol24_usdt`.

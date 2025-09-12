@@ -41,6 +41,7 @@ class Snapshot(BaseModel):
     # Optional enrichments
     funding_interval_hours: Optional[int] = None
     rule_reasons: Optional[List[str]] = None
+    has_spot: Optional[bool] = None
 
 
 class TimeseriesPoint(BaseModel):

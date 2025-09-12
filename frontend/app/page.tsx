@@ -20,8 +20,32 @@ function useMetrics(symbol: string) {
 }
 
 export default function Home() {
-  const { data: symbols } = useSWR(`${API_BASE}/symbols`, fetcher);
+  const { data: symbols, mutate: mutateSymbols } = useSWR(`${API_BASE}/symbols`, fetcher);
+  const { data: available } = useSWR(`${API_BASE}/symbols/available?include_spot=true&verify=true`, fetcher);
   const list: string[] = symbols?.watchlist || [];
+  const [newSym, setNewSym] = useState("");
+
+  async function addSymbol(sym: string) {
+    const symbol = sym.trim().toUpperCase();
+    if (!symbol) return;
+    await fetch(`${API_BASE}/symbols`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol }),
+    });
+    setNewSym("");
+    await mutateSymbols();
+  }
+
+  async function removeSymbol(sym: string) {
+    const symbol = sym.trim().toUpperCase();
+    await fetch(`${API_BASE}/symbols`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol }),
+    });
+    await mutateSymbols();
+  }
 
   return (
     <main className="p-4 space-y-4">
@@ -32,7 +56,46 @@ export default function Home() {
 
       <section>
         <h2 className="text-sm text-slate-300 mb-2">Watchlist</h2>
-        <div className="text-slate-300 text-sm">{JSON.stringify(list)}</div>
+        <form
+          className="flex items-center gap-2 mb-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addSymbol(newSym);
+          }}
+        >
+          <input
+            value={newSym}
+            onChange={(e) => setNewSym(e.target.value.toUpperCase())}
+            placeholder="e.g., BTCUSDT"
+            className="px-2 py-1 bg-slate-900 border border-slate-700 rounded text-sm text-slate-200 placeholder-slate-500"
+          />
+          <button
+            type="submit"
+            className="px-3 py-1 rounded border border-slate-600 text-sm bg-slate-800 hover:bg-slate-700"
+          >
+            Add
+          </button>
+        </form>
+
+        {list.length > 0 ? (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {list.map((s) => (
+              <span key={s} className="text-xs px-2 py-0.5 rounded-full border border-slate-600 text-slate-300 bg-slate-800/50 flex items-center gap-2">
+                {s}
+                <button
+                  onClick={() => removeSymbol(s)}
+                  className="text-slate-400 hover:text-red-400"
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="text-slate-400 text-sm mb-3">No symbols in watchlist.</div>
+        )}
+
         <MetricHelp />
       </section>
 
@@ -40,14 +103,33 @@ export default function Home() {
         {list.length === 0 ? (
           <div className="text-slate-400 text-sm">No symbols in watchlist.</div>
         ) : (
-          list.map((s) => <Tile key={s} symbol={s} />)
+          list.map((s) => <Tile key={s} symbol={s} onRemove={() => removeSymbol(s)} />)
         )}
+      </section>
+
+      <section>
+        <details className="rounded border border-slate-700 bg-slate-900/40">
+          <summary className="cursor-pointer select-none p-3 text-sky-300">Available contracts (USDT‑M Perpetual)</summary>
+          <div className="p-3">
+            {!available ? (
+              <div className="text-slate-400 text-sm">Loading…</div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(available.symbols as Array<{symbol:string; has_spot?: boolean}>).slice(0, 300).map((o) => (
+                  <button key={o.symbol} onClick={() => addSymbol(o.symbol)} className={`text-xs px-2 py-0.5 rounded border ${o.has_spot ? 'border-slate-600' : 'border-red-600'} text-slate-300 bg-slate-800/50 hover:bg-slate-700`} title={o.has_spot ? 'Spot available' : 'No spot market'}>
+                    + {o.symbol}{!o.has_spot ? ' (no spot)' : ''}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
       </section>
     </main>
   );
 }
 
-function Tile({ symbol }: { symbol: string }) {
+function Tile({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
   const { data, isLoading, latencyMs } = useMetrics(symbol);
   if (!data || isLoading) return <div className="rounded border border-slate-700 p-4">Loading {symbol}…</div>;
 
@@ -66,6 +148,7 @@ function Tile({ symbol }: { symbol: string }) {
           <span>SRS: {data.srs} / {light}</span>
           {ageSec !== null && <span className="text-slate-400">age {ageSec}s</span>}
           {typeof latencyMs === "number" && <span className="text-slate-400">api {latencyMs}ms</span>}
+          <button onClick={onRemove} className="px-2 py-0.5 rounded border border-slate-600 hover:bg-red-500/10 hover:border-red-500">Remove</button>
         </div>
       </div>
 
@@ -87,6 +170,11 @@ function Tile({ symbol }: { symbol: string }) {
       <Field k="ΔOI 1h" v={data.delta_oi_1h_usdt} />
       <Field k="Dom%" v={data.perp_dominance_pct} />
       <Field k="OB Imb" v={data.orderbook_imbalance} />
+
+      <div>
+        <div className="text-slate-400 text-sm">Spot Market</div>
+        <div className={`font-mono ${data.has_spot ? 'text-emerald-400' : 'text-red-400'}`}>{data.has_spot ? 'Available' : 'Not available'}</div>
+      </div>
 
       {Array.isArray(data.rule_reasons) && data.rule_reasons.length > 0 && (
         <div className="col-span-2 mt-2 flex flex-wrap gap-1">

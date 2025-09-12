@@ -70,8 +70,15 @@ async def collect_once(client: BinanceClient, symbol: str) -> Dict[str, Any]:
     # Dominance
     fut_24h = await client.ticker_24h(symbol)
     fut_vol24 = float(fut_24h.get("quoteVolume", 0.0))
-    spot_24h = await client.spot_ticker_24h(symbol)
-    spot_vol24 = float(spot_24h.get("quoteVolume", 0.0))
+    # Determine spot market existence and volume
+    has_spot = await client.spot_symbol_exists(symbol)
+    spot_vol24 = 0.0
+    if has_spot:
+        try:
+            spot_24h = await client.spot_ticker_24h(symbol)
+            spot_vol24 = float(spot_24h.get("quoteVolume", 0.0))
+        except Exception:
+            spot_vol24 = 0.0
     perp_dominance_pct = calc_dominance_pct(fut_vol24, spot_vol24)
 
     # Orderbook imbalance within ±2% mid
@@ -110,9 +117,10 @@ async def collect_once(client: BinanceClient, symbol: str) -> Dict[str, Any]:
         "delta_oi_1h_usdt": delta_oi_1h_usdt,
         "perp_dominance_pct": perp_dominance_pct,
         "orderbook_imbalance": orderbook_imbalance,
-        "borrow": {"shortable": False, "venues": []},
+        "borrow": {"shortable": has_spot, "venues": []},
         "fut_vol24_usdt": fut_vol24,
         "next_funding_in_sec": next_funding_in_sec,
+        "has_spot": has_spot,
     }
 
     # Compute SRS & rules
