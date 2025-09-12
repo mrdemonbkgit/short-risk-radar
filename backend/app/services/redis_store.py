@@ -29,6 +29,7 @@ KEY_WATCHLIST = "srr:watchlist"
 KEY_SNAPSHOT = "srr:snapshot:{symbol}"
 KEY_TS = "srr:ts:{symbol}:{metric}"
 KEY_FUNDING_INTERVAL = "srr:funding_interval:{symbol}"
+KEY_HAS_SPOT = "srr:has_spot:{symbol}"
 
 
 async def ensure_default_watchlist() -> List[str]:
@@ -110,3 +111,22 @@ async def get_cached_funding_interval_hours(symbol: str) -> Optional[int]:
 async def set_cached_funding_interval_hours(symbol: str, hours: int, ttl_seconds: int = 86400) -> None:
     redis = get_redis()
     await redis.setex(KEY_FUNDING_INTERVAL.format(symbol=symbol.upper()), ttl_seconds, str(int(hours)).encode())
+
+
+async def get_cached_has_spot(symbol: str) -> Optional[bool]:
+    redis = get_redis()
+    key = KEY_HAS_SPOT.format(symbol=symbol.upper())
+    val = await redis.get(key)
+    if not val:
+        return None
+    try:
+        raw = val.decode() if isinstance(val, (bytes, bytearray)) else val
+        return raw == "1"
+    except Exception:
+        return None
+
+
+async def set_cached_has_spot(symbol: str, has_spot: bool, ttl_seconds: int = 7 * 24 * 3600) -> None:
+    redis = get_redis()
+    key = KEY_HAS_SPOT.format(symbol=symbol.upper())
+    await redis.setex(key, ttl_seconds, b"1" if has_spot else b"0")

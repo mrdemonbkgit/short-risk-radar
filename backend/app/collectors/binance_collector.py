@@ -14,6 +14,8 @@ from ..services.redis_store import (
     get_cached_funding_interval_hours,
     set_cached_funding_interval_hours,
     get_metric_values_since,
+    get_cached_has_spot,
+    set_cached_has_spot,
 )
 from ..analytics.metrics import (
     calc_basis_pct,
@@ -71,7 +73,15 @@ async def collect_once(client: BinanceClient, symbol: str) -> Dict[str, Any]:
     fut_24h = await client.ticker_24h(symbol)
     fut_vol24 = float(fut_24h.get("quoteVolume", 0.0))
     # Determine spot market existence and volume
-    has_spot = await client.spot_symbol_exists(symbol)
+    # Cache has_spot to avoid flapping when spot exchangeInfo is rate-limited or transient
+    cached_has_spot = await get_cached_has_spot(symbol)
+    has_spot: bool
+    if cached_has_spot is not None:
+        has_spot = bool(cached_has_spot)
+    else:
+        has_spot = await client.spot_symbol_exists(symbol)
+        # Cache for 7 days
+        await set_cached_has_spot(symbol, has_spot)
     spot_vol24 = 0.0
     if has_spot:
         try:
