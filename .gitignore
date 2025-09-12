@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+coverage.xml
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Env & OS
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+
+# Docker
+*.pid
+docker-data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+coverage.xml
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Env & OS
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+
+# Docker
+*.pid
+docker-data/
+
+

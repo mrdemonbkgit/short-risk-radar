@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: timescale/timescaledb:2.14.2-pg15
+    container_name: srr_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: srr_redis
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: srr_api
+    env_file:
+      - ../.env
+    ports:
+      - "${API_PORT}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: srr_frontend
+    env_file:
+      - ../.env
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    depends_on:
+      - api
+
+volumes:
+  pg_data:
+
+
