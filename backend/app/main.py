@@ -5,6 +5,7 @@ from .config import get_settings
 from .routers import health, symbols, metrics, timeseries, rules, alerts
 from .lifecycle import on_startup, on_shutdown
 import os
+import logging
 
 # Sentry init (optional)
 SENTRY_DSN = os.getenv("SENTRY_DSN_BACKEND")
@@ -22,6 +23,9 @@ if SENTRY_DSN:
 settings = get_settings()
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
+
+# Basic logging config (can be overridden by server flags)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 app.add_middleware(
     CORSMiddleware,

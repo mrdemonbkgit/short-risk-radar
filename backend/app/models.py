@@ -42,6 +42,9 @@ class Snapshot(BaseModel):
     funding_interval_hours: Optional[int] = None
     rule_reasons: Optional[List[str]] = None
     has_spot: Optional[bool] = None
+    fut_vol24_usdt: Optional[float] = None
+    spot_vol24_usdt: Optional[float] = None
+    dominance_unknown: Optional[bool] = None
 
 
 class TimeseriesPoint(BaseModel):

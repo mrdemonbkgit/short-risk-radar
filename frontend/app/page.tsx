@@ -21,7 +21,8 @@ function useMetrics(symbol: string) {
 
 export default function Home() {
   const { data: symbols, mutate: mutateSymbols } = useSWR(`${API_BASE}/symbols`, fetcher);
-  const { data: available } = useSWR(`${API_BASE}/symbols/available?include_spot=true&verify=true`, fetcher);
+  const { data: mode } = useSWR(`${API_BASE}/debug/mode`, fetcher);
+  const { data: available } = useSWR(`${API_BASE}/symbols/available?include_spot=true`, fetcher);
   const list: string[] = symbols?.watchlist || [];
   const [newSym, setNewSym] = useState("");
 
@@ -51,7 +52,17 @@ export default function Home() {
     <main className="p-4 space-y-4">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Short‑Risk Radar</h1>
-        <span className="text-sm text-slate-400">MVP</span>
+        <span className="text-sm text-slate-400 flex items-center gap-3">
+          <span>MVP</span>
+          {mode && (
+            <span
+              className={`px-2 py-0.5 rounded-full border ${mode.use_ws ? 'border-emerald-500 text-emerald-300' : 'border-sky-500 text-sky-300'}`}
+              title="Backend ingestion mode"
+            >
+              {mode.use_ws ? 'WS' : 'REST'}
+            </span>
+          )}
+        </span>
       </header>
 
       <section>
@@ -141,6 +152,15 @@ function Tile({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
   const srsColor = srsBand === "RED" ? "bg-red-500" : srsBand === "YELLOW" ? "bg-amber-500" : "bg-emerald-500";
   const actionText = light === "RED" ? "DO NOT SHORT" : light === "GREEN" ? "SHORT WINDOW" : "BASIS-ONLY";
   const actionBorder = light === "RED" ? "border-red-500 text-red-300" : light === "GREEN" ? "border-emerald-500 text-emerald-300" : "border-amber-500 text-amber-300";
+  const fmtCompact = (x: any) => {
+    const n = Number(x);
+    if (!isFinite(n)) return String(x);
+    const abs = Math.abs(n);
+    if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
+    if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+    if (abs >= 1_000) return `${(n / 1_000).toFixed(2)}K`;
+    return String(n);
+  };
 
   return (
     <div className="rounded border border-slate-700 p-4 grid grid-cols-2 gap-2">
@@ -181,7 +201,13 @@ function Tile({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
 
       <Field k="OI (USDT)" v={data.oi_usdt} />
       <Field k="ΔOI 1h" v={data.delta_oi_1h_usdt} />
-      <Field k="Dom%" v={data.perp_dominance_pct} />
+      <div>
+        <div className="text-slate-400 text-sm">Dom%</div>
+        <div className="font-mono">
+          {data.dominance_unknown ? <span className="text-slate-500">unknown</span> : String(data.perp_dominance_pct)}
+        </div>
+        <div className="text-xs text-slate-500 mt-0.5">Perp24h {fmtCompact(data.fut_vol24_usdt)} / Spot24h {fmtCompact(data.spot_vol24_usdt)}</div>
+      </div>
       <Field k="OB Imb" v={data.orderbook_imbalance} />
 
       <div>
@@ -201,10 +227,19 @@ function Tile({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
 }
 
 function Field({ k, v }: { k: string; v: any }) {
+  function fmtNumber(x: any) {
+    const n = Number(x);
+    if (!isFinite(n)) return String(x);
+    const abs = Math.abs(n);
+    if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
+    if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+    if (abs >= 1_000) return `${(n / 1_000).toFixed(2)}K`;
+    return String(n);
+  }
   return (
     <div className="text-sm">
       <div className="text-slate-400">{k}</div>
-      <div className="font-mono">{String(v)}</div>
+      <div className="font-mono">{fmtNumber(v)}</div>
     </div>
   );
 }

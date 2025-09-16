@@ -20,11 +20,16 @@ class Settings:
         # Exchange APIs
         self.binance_base_url: str = os.getenv("BINANCE_BASE_URL", "https://fapi.binance.com")
         self.binance_spot_base_url: str = os.getenv("BINANCE_SPOT_BASE_URL", "https://api.binance.com")
+        self.binance_api_key: str = os.getenv("BINANCE_API_KEY", "")
+        self.binance_api_secret: str = os.getenv("BINANCE_API_SECRET", "")
 
         # Sampling intervals
         self.collect_interval_sec: int = int(os.getenv("COLLECT_INTERVAL_SEC", "10"))
         self.oi_refresh_sec: int = int(os.getenv("OI_REFRESH_SEC", "300"))
         self.funding_refresh_sec: int = int(os.getenv("FUNDING_REFRESH_SEC", "3600"))
+
+        # Feature flags
+        self.use_ws: bool = os.getenv("USE_WS", "false").lower() in ("1", "true", "yes")
 
 
 @lru_cache(maxsize=1)

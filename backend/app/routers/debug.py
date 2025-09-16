@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from ..config import get_settings
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 
@@ -17,3 +18,9 @@ async def capture_sentry_message():
         return {"ok": True, "sent": True}
     except Exception:
         return {"ok": False, "sent": False}
+
+
+@router.get("/mode")
+async def mode():
+    s = get_settings()
+    return {"use_ws": s.use_ws}
