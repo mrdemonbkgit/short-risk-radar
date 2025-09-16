@@ -36,7 +36,7 @@ This plan translates the PRD into concrete deliverables, milestones, and tasks.
 5) Analytics engine (TWAPs, dominance, ΔOI, imbalance, SRS; rules)
 6) API endpoints (§7.4) with pagination/time filters; CSV export
 7) Frontend UI (watchlist, tiles, charts, rule explainability)
-8) Alerts service (Telegram), throttling/debounce)
+8) Alerts service (Telegram), throttling/debounce) 
 9) Tests (unit for calcs; integration with mocked HTTP)
 
 ## Testing Strategy
@@ -47,6 +47,7 @@ This plan translates the PRD into concrete deliverables, milestones, and tasks.
 ## Performance Targets
 - Sampling loop uses async httpx + rate limiting and jitter
 - Cache latest snapshot per symbol in Redis; UI reads from API that fans out to Redis
+- Cache Binance symbol availability responses for 15 minutes (memory) and mirror spot existence flags in Redis with short TTLs to avoid rate-limit loops
 - Batch inserts into Timescale at 1m granularity
 
 ## Rollout

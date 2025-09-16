@@ -91,7 +91,7 @@ Each tile must show, updated at least every 10–30s:
 
 ## 6) System Architecture
 **Option A (robust):**
-- **Collector** (Python/FastAPI workers): pulls Binance Futures & Spot; optional CCXT for other venues; push to Redis for hot cache and TimescaleDB/Postgres for history.
+- **Collector** (Python/FastAPI workers): pulls Binance Futures & Spot with multi-host fallback/backoff; optional CCXT for other venues; push to Redis for hot cache and TimescaleDB/Postgres for history.
 - **Analytics Engine**: computes basis TWAPs, dominance, ΔOI, SRS, rule states.
 - **API Layer** (FastAPI): aggregates time windows; serves UI + alerts service.
 - **Frontend** (Next.js/React + Tailwind + Recharts/ECharts).
