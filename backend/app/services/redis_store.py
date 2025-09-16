@@ -126,7 +126,9 @@ async def get_cached_has_spot(symbol: str) -> Optional[bool]:
         return None
 
 
-async def set_cached_has_spot(symbol: str, has_spot: bool, ttl_seconds: int = 7 * 24 * 3600) -> None:
+async def set_cached_has_spot(symbol: str, has_spot: bool, ttl_seconds: Optional[int] = None) -> None:
     redis = get_redis()
     key = KEY_HAS_SPOT.format(symbol=symbol.upper())
+    if ttl_seconds is None:
+        ttl_seconds = 7 * 24 * 3600 if has_spot else 3600
     await redis.setex(key, ttl_seconds, b"1" if has_spot else b"0")
